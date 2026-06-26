@@ -60,3 +60,12 @@ venv/
 
 # Render build artifacts (keep dist out of git — rebuilt on each deploy)
 artifacts/video-downloader/dist/
+
+# Python
+cookies.txt
+venv/
+.venv/
+*.env
+
+# Build script (not used in Python-only Render deployment)
+# build.sh is kept for reference but not executed by render.yaml

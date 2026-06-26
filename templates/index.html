@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مُحمِّل الفيديو — يدعم 1800+ منصة</title>
+  <meta name="description" content="حمّل أي فيديو من يوتيوب وتيك توك وإنستغرام وأكثر من 1800 منصة أخرى." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- canvas-confetti via CDN — no npm required -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
+</head>
+<body>
+
+  <!-- ── Error popup ──────────────────────────────────────────────── -->
+  <div id="error-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="error-title">
+    <div class="popup">
+      <button class="popup-close" onclick="closeError()" aria-label="إغلاق">✕</button>
+      <div class="popup-icon">⚠</div>
+      <h2 id="error-title" class="popup-heading">فشل الاستخراج</h2>
+      <p id="error-message" class="popup-body"></p>
+      <button class="btn btn-danger" onclick="closeError()">حسناً</button>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <main class="main">
+
+      <!-- ── Hero ───────────────────────────────────────────────────── -->
+      <section class="hero">
+        <div class="hero-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <h1 class="hero-title">
+          استخرج وحمّل <span class="accent">أي فيديو</span> فوراً
+        </h1>
+        <p class="hero-sub">
+          الصق أي رابط من أكثر من 1800 منصة — YouTube، TikTok، Instagram، Twitter/X، Facebook، Vimeo وغيرها.
+        </p>
+      </section>
+
+      <!-- ── Input form ─────────────────────────────────────────────── -->
+      <form id="download-form" class="form" onsubmit="handleSubmit(event)" novalidate>
+        <div class="input-wrap">
+          <input
+            id="url-input"
+            type="url"
+            class="url-input"
+            placeholder="https://youtube.com/watch?v=..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button id="submit-btn" type="submit" class="btn btn-primary">
+            <span id="btn-text">استخراج</span>
+            <span id="btn-spinner" class="spinner hidden"></span>
+          </button>
+        </div>
+      </form>
+
+      <!-- ── Loading state ──────────────────────────────────────────── -->
+      <div id="loading" class="loading hidden">
+        <div class="loading-ring"></div>
+        <p>يتم استخراج الروابط من أكثر من 1800 منصة…</p>
+      </div>
+
+      <!-- ── Result card ────────────────────────────────────────────── -->
+      <div id="result-card" class="result-card hidden">
+        <div class="result-inner">
+
+          <!-- Thumbnail -->
+          <div class="thumb-wrap">
+            <img id="result-thumb" src="" alt="صورة مصغرة" class="thumb-img" />
+            <div id="thumb-fallback" class="thumb-fallback hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              <span>لا توجد صورة مصغرة</span>
+            </div>
+            <span id="result-duration" class="duration-badge hidden"></span>
+          </div>
+
+          <!-- Info + formats -->
+          <div class="result-info">
+            <div class="result-meta">
+              <span id="result-platform" class="platform-badge hidden"></span>
+              <h2 id="result-title" class="result-title"></h2>
+              <p id="result-uploader" class="result-uploader hidden"></p>
+            </div>
+
+            <div class="formats-section">
+              <h3 class="formats-heading">الصيغ المتاحة للتحميل</h3>
+              <div id="formats-grid" class="formats-grid"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ── Footer ─────────────────────────────────────────────────── -->
+    <footer class="footer">
+      <p>
+        يدعم أكثر من 1800 موقع بما فيها YouTube، TikTok، Facebook، Instagram، Twitter/X، Vimeo، Dailymotion، Twitch، Reddit، Bilibili، Rumble، VK وغيرها.
+        <strong>لا يدعم المحتوى المحمي بـ DRM (Netflix، Disney+ وما شابهها).</strong>
+      </p>
+    </footer>
+
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

@@ -1,12 +1,10 @@
 services:
   - type: web
     name: video-downloader
-    runtime: python
-    buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --keep-alive 5 wsgi:app
+    env: python
+    buildCommand: apt-get update -qq && apt-get install -y ffmpeg && pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     healthCheckPath: /api/healthz
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: NODE_ENV
-        value: production
+        value: "3.11.0"
