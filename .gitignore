@@ -47,3 +47,16 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pythonlibs/
+*.egg-info/
+.env
+.venv/
+venv/
+
+# Render build artifacts (keep dist out of git — rebuilt on each deploy)
+artifacts/video-downloader/dist/

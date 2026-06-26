@@ -1,0 +1,12 @@
+# Reduce deploy image size — none of these are needed at runtime.
+.local/
+.cache/
+.pythonlibs/
+artifacts/mockup-sandbox/
+__pycache__/
+*.py[cod]
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+npm-debug.log
+yarn-error.log
