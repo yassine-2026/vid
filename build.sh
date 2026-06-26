@@ -9,9 +9,20 @@ echo "==================================================================="
 echo " Video Downloader — Render Build"
 echo "==================================================================="
 
+# ── 0. System dependencies ────────────────────────────────────────────
+# ffmpeg is required by yt-dlp to merge separate video+audio streams
+# (e.g., YouTube 1080p+, Vimeo, etc.). Install silently if not present.
+echo ""
+echo ">>> [0/6] Installing system dependencies (ffmpeg)..."
+if ! command -v ffmpeg &>/dev/null; then
+    apt-get update -qq
+    apt-get install -y ffmpeg 2>&1 | tail -3
+fi
+echo "    ffmpeg: $(ffmpeg -version 2>&1 | head -1 | cut -d' ' -f1-3)"
+
 # ── 1. Node.js ────────────────────────────────────────────────────────
 echo ""
-echo ">>> [1/5] Checking Node.js..."
+echo ">>> [1/6] Checking Node.js..."
 
 NODE_MAJOR=0
 if command -v node &>/dev/null; then
@@ -31,7 +42,7 @@ echo "    node: $(node --version)"
 #   - '--silent' hides the real error making failures invisible
 # Strategy: Corepack (bundled with Node 16.9+) first, standalone installer fallback.
 echo ""
-echo ">>> [2/5] Installing pnpm@10.26.1..."
+echo ">>> [2/6] Installing pnpm@10.26.1..."
 
 # --- Attempt 1: Corepack ---
 # 'corepack enable pnpm' creates a pnpm shim in the system bin directory.
@@ -57,7 +68,7 @@ echo "    pnpm: $(pnpm --version)"
 
 # ── 3. Node packages ──────────────────────────────────────────────────
 echo ""
-echo ">>> [3/5] Installing Node packages (frozen lockfile)..."
+echo ">>> [3/6] Installing Node packages (frozen lockfile)..."
 # --frozen-lockfile installs exact versions from pnpm-lock.yaml.
 # This skips all metadata fetches and bypasses the minimumReleaseAge:1440
 # setting in pnpm-workspace.yaml — safe and fast on CI.
@@ -65,7 +76,7 @@ pnpm install --frozen-lockfile
 
 # ── 4. Build React frontend ───────────────────────────────────────────
 echo ""
-echo ">>> [4/5] Building React frontend..."
+echo ">>> [4/6] Building React frontend..."
 export PORT=8080
 export BASE_PATH=/
 export NODE_ENV=production
@@ -80,7 +91,7 @@ echo "    dist/public: $(ls artifacts/video-downloader/dist/public/)"
 
 # ── 5. Python packages ────────────────────────────────────────────────
 echo ""
-echo ">>> [5/5] Installing Python packages..."
+echo ">>> [5/6] Installing Python packages..."
 pip install --upgrade pip --quiet
 pip install -r requirements.txt
 echo "    flask:    $(python3 -c 'import flask; print(flask.__version__)')"
