@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Video Downloader API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: download
+    description: Video download operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /download:
+    post:
+      operationId: extractVideo
+      tags: [download]
+      summary: Extract video download links
+      description: Extracts direct download links from a video URL using yt-dlp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VideoInput"
+      responses:
+        "200":
+          description: Video info and download links
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoResult"
+        "400":
+          description: Bad request or extraction error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+
 components:
   schemas:
     HealthStatus:
@@ -33,4 +60,66 @@ components:
           type: string
       required:
         - status
-
+    VideoInput:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          description: The video URL to extract
+    VideoFormat:
+      type: object
+      required:
+        - type
+        - quality
+        - url
+      properties:
+        type:
+          type: string
+          description: Format type (video+audio, audio only, video only)
+        quality:
+          type: string
+          description: Quality label (e.g. 1080p, 720p, best)
+        url:
+          type: string
+          description: Direct download URL
+        ext:
+          type: ["string", "null"]
+          description: File extension
+        filesize:
+          type: ["integer", "null"]
+          description: File size in bytes
+    VideoResult:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+        title:
+          type: ["string", "null"]
+        thumbnail:
+          type: ["string", "null"]
+        duration:
+          type: ["integer", "null"]
+        uploader:
+          type: ["string", "null"]
+        platform:
+          type: ["string", "null"]
+        formats:
+          type: array
+          items:
+            $ref: "#/components/schemas/VideoFormat"
+        error:
+          type: ["string", "null"]
+    ErrorResult:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+        error:
+          type: string
