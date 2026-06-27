@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141428"/>
+      <stop offset="100%" stop-color="#0a0a1a"/>
+    </linearGradient>
+    <linearGradient id="arrow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#0099cc"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded square -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+  <!-- Subtle border -->
+  <rect x=".75" y=".75" width="30.5" height="30.5" rx="6.5" fill="none" stroke="#00e5ff" stroke-width="1" opacity=".25"/>
+  <!-- Down-arrow symbol: vertical line + chevron -->
+  <!-- Vertical bar -->
+  <rect x="14.5" y="5" width="3" height="13" rx="1.5" fill="url(#arrow)"/>
+  <!-- Arrow head (chevron down) -->
+  <polygon points="16,25  8,17 10.5,17 16,22.5 21.5,17 24,17" fill="url(#arrow)"/>
+  <!-- Horizontal base line -->
+  <rect x="8" y="26" width="16" height="2.5" rx="1.25" fill="url(#arrow)" opacity=".7"/>
+</svg>

@@ -1,211 +1,412 @@
+/* ═══════════════════════════════════════════════════════════════════
+   VideoNeste — Frontend Script
+   i18n + Format fetching + Preview + Streaming download
+═══════════════════════════════════════════════════════════════════ */
+
+"use strict";
+
 /* ── State ──────────────────────────────────────────────────────────── */
-let isLoading = false;
+let _lang     = "en";
+let _strings  = {};
+let _formats  = [];
+let _isBusy   = false;
+let _vidTitle = "";
 
-/* ── DOM refs ───────────────────────────────────────────────────────── */
-const form         = document.getElementById("download-form");
-const urlInput     = document.getElementById("url-input");
-const submitBtn    = document.getElementById("submit-btn");
-const btnText      = document.getElementById("btn-text");
-const btnSpinner   = document.getElementById("btn-spinner");
-const loadingEl    = document.getElementById("loading");
-const resultCard   = document.getElementById("result-card");
-const errorOverlay = document.getElementById("error-overlay");
-const errorMsg     = document.getElementById("error-message");
+/* ── i18n ────────────────────────────────────────────────────────────── */
+const SUPPORTED_LANGS = [
+  "ar","en","es","fr","de","zh","hi","pt","ru","ja","ko","it","tr","nl","pl"
+];
+const RTL_LANGS = ["ar"];
 
-/* ── Form submission ────────────────────────────────────────────────── */
-async function handleSubmit(e) {
-  e.preventDefault();
-  const url = urlInput.value.trim();
-  if (!url || isLoading) return;
-  await extractVideo(url);
+async function loadLang(code) {
+  if (!SUPPORTED_LANGS.includes(code)) code = "en";
+  try {
+    const res  = await fetch(`/lang/${code}.json`);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    _strings = await res.json();
+    _lang    = code;
+    localStorage.setItem("vn_lang", code);
+    applyStrings();
+    applyDir(_strings.dir || "ltr");
+  } catch (e) {
+    console.warn("[VideoNeste] Could not load lang:", code, e);
+    if (code !== "en") await loadLang("en");
+  }
 }
 
-/* ── Extract video ──────────────────────────────────────────────────── */
-async function extractVideo(url) {
-  setLoading(true);
-  hideResult();
+function applyStrings() {
+  /* Static elements with data-i18n */
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (_strings[key]) el.textContent = _strings[key];
+  });
+  /* Placeholders */
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (_strings[key]) el.placeholder = _strings[key];
+  });
+  /* Page title */
+  if (_strings.title) document.title = _strings.title;
+  /* Quality select default option */
+  const qsDefault = document.querySelector("#quality-select option[value='']");
+  if (qsDefault && _strings.quality_select_default) {
+    qsDefault.textContent = _strings.quality_select_default;
+  }
+}
+
+function applyDir(dir) {
+  document.getElementById("html-root").setAttribute("dir", dir);
+  document.getElementById("html-root").setAttribute("lang", _lang);
+}
+
+function t(key, fallback) {
+  return _strings[key] || fallback || key;
+}
+
+/* ── Language switcher ───────────────────────────────────────────────── */
+const langSelect = document.getElementById("lang-select");
+langSelect.addEventListener("change", () => loadLang(langSelect.value));
+
+function detectLang() {
+  const stored = localStorage.getItem("vn_lang");
+  if (stored && SUPPORTED_LANGS.includes(stored)) return stored;
+  const browser = (navigator.language || "en").substring(0, 2).toLowerCase();
+  return SUPPORTED_LANGS.includes(browser) ? browser : "en";
+}
+
+/* ── DOM helpers ─────────────────────────────────────────────────────── */
+const $  = id => document.getElementById(id);
+const show   = (id, flex) => { const el = $(id); el && el.classList.remove("d-none"); if (flex) el.style.display = "flex"; };
+const hide   = id => { const el = $(id); el && el.classList.add("d-none"); };
+const setText = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
+
+/* ── Loading state ───────────────────────────────────────────────────── */
+function setLoading(state, msgKey) {
+  _isBusy = state;
+  $("fetch-btn").disabled   = state;
+  $("download-btn").disabled = state;
+  $("preview-btn").disabled  = state;
+
+  const btnText    = $("fetch-btn-text");
+  const btnSpinner = $("fetch-btn-spinner");
+
+  if (state) {
+    btnText.classList.add("d-none");
+    btnSpinner.classList.remove("d-none");
+    setText("loading-text", t(msgKey || "fetching_formats", "Loading..."));
+    show("loading-state");
+  } else {
+    btnText.classList.remove("d-none");
+    btnSpinner.classList.add("d-none");
+    hide("loading-state");
+  }
+}
+
+/* ── Error popup ─────────────────────────────────────────────────────── */
+function showError(msg) {
+  /* Map error code to localised string if possible */
+  const codeMap = {
+    cookie_expired:  "cookie_expired",
+    unsupported:     "error_fetch",
+    login_required:  "error_fetch",
+    deleted:         "error_fetch",
+    geo_restricted:  "error_fetch",
+    network:         "error_server",
+    drm:             "error_fetch",
+    rate_limit:      "error_server",
+    unknown:         "error_fetch",
+  };
+  /* msg might be a raw string or an object */
+  let text = typeof msg === "string" ? msg : "";
+  if (!text && typeof msg === "object" && msg.error) {
+    const mapped = codeMap[msg.code];
+    text = mapped ? t(mapped) : msg.error;
+  }
+  $("error-message").textContent = text || t("error_fetch");
+  $("error-overlay").classList.remove("d-none");
+}
+
+function closeError() {
+  $("error-overlay").classList.add("d-none");
+}
+
+document.getElementById("error-overlay").addEventListener("click", e => {
+  if (e.target === $("error-overlay")) closeError();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeError(); });
+
+/* ── URL validation ──────────────────────────────────────────────────── */
+function validateURL(url) {
+  if (!url) return t("error_empty");
+  if (!url.startsWith("http://") && !url.startsWith("https://")) return t("error_invalid_url");
+  return null;
+}
+
+/* ── Main: fetch formats ─────────────────────────────────────────────── */
+async function onFetchFormats(e) {
+  if (e) e.preventDefault();
+  const url = $("url-input").value.trim();
+  const err = validateURL(url);
+  if (err) { showError(err); return; }
+  if (_isBusy) return;
+
+  setLoading(true, "fetching_formats");
+  hide("result-section");
+  hide("player-wrap");
+  $("download-btn").disabled = false;
 
   try {
-    const res = await fetch("/api/download", {
+    const res  = await fetch("/api/download", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ url }),
     });
-
     const data = await res.json();
 
-    if (data.success) {
-      renderResult(data);
-      fireConfetti();
-    } else {
-      showError(data.error || "تعذّر استخراج الفيديو من هذا الرابط.");
+    if (!data.success) {
+      showError(data);
+      return;
     }
-  } catch (err) {
-    showError("خطأ في الشبكة أو الخادم غير متاح. يرجى المحاولة مجدداً.");
+
+    _formats   = data.formats || [];
+    _vidTitle  = data.title   || "VideoNeste";
+
+    renderResultCard(data);
+    fireConfetti();
+  } catch (ex) {
+    showError(t("error_server"));
   } finally {
     setLoading(false);
   }
 }
 
-/* ── Render result card ─────────────────────────────────────────────── */
-function renderResult(data) {
+/* ── Render result card ──────────────────────────────────────────────── */
+function renderResultCard(data) {
   /* Thumbnail */
-  const thumb       = document.getElementById("result-thumb");
-  const thumbFallbk = document.getElementById("thumb-fallback");
-
+  const thumb   = $("result-thumb");
+  const thumbFb = $("thumb-fallback");
   if (data.thumbnail) {
-    thumb.src         = data.thumbnail;
-    thumb.alt         = data.title || "صورة مصغرة";
-    thumb.classList.remove("hidden");
-    thumbFallbk.classList.add("hidden");
+    thumb.src   = data.thumbnail;
+    thumb.alt   = data.title || "";
+    thumb.classList.remove("d-none");
+    thumbFb.classList.add("d-none");
     thumb.onerror = () => {
-      thumb.classList.add("hidden");
-      thumbFallbk.classList.remove("hidden");
+      thumb.classList.add("d-none");
+      thumbFb.classList.remove("d-none");
     };
   } else {
-    thumb.classList.add("hidden");
-    thumbFallbk.classList.remove("hidden");
+    thumb.classList.add("d-none");
+    thumbFb.classList.remove("d-none");
   }
 
-  /* Duration badge */
-  const durEl = document.getElementById("result-duration");
+  /* Duration */
+  const dur = $("duration-badge");
   if (data.duration) {
-    durEl.textContent = formatDuration(data.duration);
-    durEl.classList.remove("hidden");
+    dur.textContent = formatDuration(data.duration);
+    dur.classList.remove("d-none");
   } else {
-    durEl.classList.add("hidden");
+    dur.classList.add("d-none");
   }
 
-  /* Platform badge */
-  const platEl = document.getElementById("result-platform");
+  /* Platform */
+  const plat = $("platform-badge");
   if (data.platform) {
-    platEl.textContent = data.platform;
-    platEl.classList.remove("hidden");
+    plat.textContent = data.platform;
+    plat.classList.remove("d-none");
   } else {
-    platEl.classList.add("hidden");
+    plat.classList.add("d-none");
   }
 
   /* Title */
-  document.getElementById("result-title").textContent = data.title || "عنوان غير متاح";
+  $("result-title").textContent = data.title || "";
 
   /* Uploader */
-  const uplEl = document.getElementById("result-uploader");
+  const upl = $("result-uploader");
   if (data.uploader) {
-    uplEl.innerHTML = `بواسطة <strong>${escHtml(data.uploader)}</strong>`;
-    uplEl.classList.remove("hidden");
+    upl.innerHTML   = `<strong>${escHtml(data.uploader)}</strong>`;
+    upl.classList.remove("d-none");
   } else {
-    uplEl.classList.add("hidden");
+    upl.classList.add("d-none");
   }
 
-  /* Formats */
-  const grid = document.getElementById("formats-grid");
-  grid.innerHTML = "";
+  /* Quality dropdown */
+  const sel = $("quality-select");
+  sel.innerHTML = `<option value="">${t("quality_select_default")}</option>`;
 
-  if (!data.formats || data.formats.length === 0) {
-    grid.innerHTML = '<p style="color:var(--muted);font-size:.9rem;padding:.5rem 0">لم يتم العثور على صيغ متاحة.</p>';
-  } else {
-    data.formats.forEach((fmt) => {
-      const a     = document.createElement("a");
-      const dlUrl = `/api/download-file?url=${encodeURIComponent(fmt.url)}`;
-      a.href      = dlUrl;
-      a.target    = "_blank";
-      a.rel       = "noopener noreferrer";
-      a.download  = "";
-      a.className = "format-btn";
+  _formats.forEach((fmt, idx) => {
+    const opt   = document.createElement("option");
+    opt.value   = idx;
+    let label   = fmt.label;
+    if (fmt.type === "audio") label = `♪ ${label}`;
+    if (fmt.filesize_str)     label += `  —  ${fmt.filesize_str}`;
+    if (fmt.has_audio === false) label += `  (${t("format_video_audio").split("+")[0].trim()} only)`;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  });
 
-      const icon  = fmt.type === "audio" ? "♪" : "▶";
-      const label = fmt.quality + (fmt.ext ? ` <span class="format-ext">${escHtml(fmt.ext)}</span>` : "");
-      const size  = fmt.filesize ? `<span class="format-size">${formatSize(fmt.filesize)}</span>` : "";
+  /* Auto-select first quality */
+  if (_formats.length > 0) sel.value = "0";
 
-      a.innerHTML = `
-        <span class="format-icon">${icon}</span>
-        <span class="format-label">${label}</span>
-        ${size}
-      `;
-      grid.appendChild(a);
+  show("result-section");
+  hide("download-status");
+}
+
+/* ── Preview ─────────────────────────────────────────────────────────── */
+async function onPreview() {
+  const url = $("url-input").value.trim();
+  if (!url) { showError(t("error_empty")); return; }
+  if (_isBusy) return;
+
+  _isBusy = true;
+  $("preview-btn").disabled = true;
+  setText("loading-text", t("fetching_preview", "Loading preview..."));
+  show("loading-state");
+
+  try {
+    const res  = await fetch("/api/preview", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ url }),
     });
+    const data = await res.json();
+
+    showPlayerSection(data);
+  } catch (ex) {
+    showError(t("error_server"));
+  } finally {
+    _isBusy = false;
+    $("preview-btn").disabled = false;
+    hide("loading-state");
+  }
+}
+
+function showPlayerSection(data) {
+  const player    = $("video-player");
+  const source    = $("video-source");
+  const fallback  = $("player-fallback");
+  const fbThumb   = $("fallback-thumb");
+
+  if (data.stream_url) {
+    source.src = data.stream_url;
+    player.classList.remove("d-none");
+    fallback.classList.add("d-none");
+    player.load();
+    player.play().catch(() => {}); // auto-play (may be blocked by browser)
+  } else {
+    player.classList.add("d-none");
+    fallback.classList.remove("d-none");
+    if (data.thumbnail) {
+      fbThumb.src = data.thumbnail;
+      fbThumb.classList.remove("d-none");
+    } else {
+      fbThumb.classList.add("d-none");
+    }
   }
 
-  resultCard.classList.remove("hidden");
+  show("player-wrap");
+  $("player-wrap").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-/* ── Loading state ──────────────────────────────────────────────────── */
-function setLoading(state) {
-  isLoading          = state;
-  submitBtn.disabled = state;
-  btnText.classList.toggle("hidden",  state);
-  btnSpinner.classList.toggle("hidden", !state);
-  loadingEl.classList.toggle("hidden",  !state);
+function closePlayer() {
+  const player = $("video-player");
+  player.pause();
+  player.src = "";
+  $("video-source").src = "";
+  hide("player-wrap");
 }
 
-/* ── Hide result ────────────────────────────────────────────────────── */
-function hideResult() {
-  resultCard.classList.add("hidden");
+/* ── Download ────────────────────────────────────────────────────────── */
+function onDownload() {
+  const url   = $("url-input").value.trim();
+  const selEl = $("quality-select");
+  const idx   = selEl.value;
+
+  if (!url) { showError(t("error_empty")); return; }
+
+  if (idx === "" || _formats.length === 0) {
+    /* Fallback: directly use /api/download and then redirect */
+    if (_formats.length === 0) {
+      showError(t("select_quality_first"));
+      return;
+    }
+  }
+
+  const fmt = _formats[parseInt(idx, 10) || 0];
+  if (!fmt) { showError(t("select_quality_first")); return; }
+
+  const params = new URLSearchParams({
+    url:    url,
+    format: fmt.format_id,
+    ext:    fmt.ext    || "mp4",
+    title:  _vidTitle  || "VideoNeste",
+  });
+
+  /* Create a hidden anchor and click it — no page navigation */
+  const a   = document.createElement("a");
+  a.href    = `/download?${params.toString()}`;
+  a.download = "";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  /* Show feedback */
+  const status = $("download-status");
+  status.textContent = t("download_started");
+  status.classList.remove("d-none");
+  setTimeout(() => status.classList.add("d-none"), 4000);
 }
 
-/* ── Error popup ────────────────────────────────────────────────────── */
-function showError(msg) {
-  errorMsg.textContent = msg;
-  errorOverlay.classList.remove("hidden");
-}
-
-function closeError() {
-  errorOverlay.classList.add("hidden");
-}
-
-/* Close popup on overlay click */
-errorOverlay.addEventListener("click", (e) => {
-  if (e.target === errorOverlay) closeError();
-});
-
-/* Close on Escape */
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeError();
+/* ── URL input watcher ───────────────────────────────────────────────── */
+$("url-input").addEventListener("input", () => {
+  closeError();
+  const hasVal = $("url-input").value.trim().length > 0;
+  if (!hasVal) {
+    hide("result-section");
+    hide("player-wrap");
+    _formats  = [];
+    _vidTitle = "";
+  }
 });
 
 /* ── Confetti ────────────────────────────────────────────────────────── */
 function fireConfetti() {
   if (typeof confetti === "undefined") return;
-  const count  = 180;
-  const origin = { y: 0.65 };
-  const fire   = (ratio, opts) =>
-    confetti({ origin, count: Math.floor(count * ratio), ...opts });
-
-  fire(0.25, { spread: 26, startVelocity: 55 });
-  fire(0.20, { spread: 60 });
-  fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-  fire(0.10, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-  fire(0.10, { spread: 120, startVelocity: 45 });
+  const n = 160;
+  const o = { y: 0.65 };
+  confetti({ origin: o, count: Math.floor(n * .25), spread: 26, startVelocity: 55 });
+  confetti({ origin: o, count: Math.floor(n * .2),  spread: 60 });
+  confetti({ origin: o, count: Math.floor(n * .35), spread: 100, decay: .91, scalar: .8 });
+  confetti({ origin: o, count: Math.floor(n * .1),  spread: 120, startVelocity: 25, decay: .92, scalar: 1.2 });
 }
 
 /* ── Utils ───────────────────────────────────────────────────────────── */
-function formatDuration(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
-  return `${m}:${pad(s)}`;
+function formatDuration(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  return h > 0
+    ? `${h}:${pad(m)}:${pad(s)}`
+    : `${m}:${pad(s)}`;
 }
-
 function pad(n) { return String(n).padStart(2, "0"); }
 
-function formatSize(bytes) {
-  if (!bytes) return "";
-  if (bytes < 1024 * 1024)           return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024)    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 ** 3)).toFixed(1)} GB`;
-}
-
 function escHtml(str) {
-  return str
+  return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
 
-/* ── Clear results on new input ─────────────────────────────────────── */
-urlInput.addEventListener("input", () => {
-  if (!resultCard.classList.contains("hidden")) hideResult();
-  closeError();
-});
+/* ── Boot ────────────────────────────────────────────────────────────── */
+(function init() {
+  /* Footer year */
+  const fy = document.getElementById("footer-year");
+  if (fy) fy.textContent = new Date().getFullYear();
+
+  /* Load persisted language */
+  const lang = detectLang();
+  langSelect.value = SUPPORTED_LANGS.includes(lang) ? lang : "en";
+  loadLang(lang);
+})();
