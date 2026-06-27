@@ -30,5 +30,6 @@
   "cookie_expired": "Файл cookies устарел или недействителен.",
   "close": "Закрыть",
   "footer_text": "Поддерживает более 1800 платформ включая YouTube, TikTok, Facebook, Instagram, Twitter/X. Не поддерживает контент с DRM защитой.",
-  "supported_platforms": "Поддерживаемые платформы"
+  "supported_platforms": "Поддерживаемые платформы",
+  "error_invidious_unavailable": "YouTube в настоящее время недоступен через наш прокси. Все зеркальные серверы недоступны. Пожалуйста, попробуйте позже."
 }

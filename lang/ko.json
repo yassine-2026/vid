@@ -30,5 +30,6 @@
   "cookie_expired": "쿠키 파일이 만료되었거나 유효하지 않습니다.",
   "close": "닫기",
   "footer_text": "YouTube, TikTok, Facebook, Instagram, Twitter/X를 포함한 1800개 이상의 플랫폼 지원. DRM 보호 콘텐츠는 지원하지 않습니다.",
-  "supported_platforms": "지원 플랫폼"
+  "supported_platforms": "지원 플랫폼",
+  "error_invidious_unavailable": "현재 프록시를 통해 YouTube에 접속할 수 없습니다. 모든 미러 서버가 다운되었습니다. 나중에 다시 시도해주세요."
 }

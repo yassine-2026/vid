@@ -30,5 +30,6 @@
   "cookie_expired": "Cookie文件已过期或无效。",
   "close": "关闭",
   "footer_text": "支持1800多个平台，包括YouTube、TikTok、Facebook、Instagram、Twitter/X。不支持DRM保护内容。",
-  "supported_platforms": "支持的平台"
+  "supported_platforms": "支持的平台",
+  "error_invidious_unavailable": "YouTube当前无法通过我们的代理访问。所有镜像服务器均已关闭，请稍后再试。"
 }

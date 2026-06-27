@@ -30,5 +30,6 @@
   "cookie_expired": "クッキーファイルの有効期限が切れているか無効です。",
   "close": "閉じる",
   "footer_text": "YouTube、TikTok、Facebook、Instagram、Twitter/X を含む1800以上のプラットフォームに対応。DRM保護コンテンツは非対応。",
-  "supported_platforms": "対応プラットフォーム"
+  "supported_platforms": "対応プラットフォーム",
+  "error_invidious_unavailable": "現在、プロキシ経由でYouTubeにアクセスできません。すべてのミラーサーバーが停止しています。後でもう一度お試しください。"
 }

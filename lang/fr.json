@@ -30,5 +30,6 @@
   "cookie_expired": "Le fichier de cookies est expiré ou invalide.",
   "close": "Fermer",
   "footer_text": "Compatible avec plus de 1800 plateformes dont YouTube, TikTok, Facebook, Instagram, Twitter/X. Ne supporte pas le contenu protégé par DRM.",
-  "supported_platforms": "Plateformes supportées"
+  "supported_platforms": "Plateformes supportées",
+  "error_invidious_unavailable": "YouTube est actuellement indisponible via notre proxy. Tous les serveurs miroirs sont hors ligne. Veuillez réessayer plus tard."
 }

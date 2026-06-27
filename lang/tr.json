@@ -30,5 +30,6 @@
   "cookie_expired": "Çerez dosyası süresi dolmuş veya geçersiz.",
   "close": "Kapat",
   "footer_text": "YouTube, TikTok, Facebook, Instagram, Twitter/X dahil 1800'den fazla platformu destekler. DRM korumalı içerikleri desteklemez.",
-  "supported_platforms": "Desteklenen platformlar"
+  "supported_platforms": "Desteklenen platformlar",
+  "error_invidious_unavailable": "YouTube şu anda proxy'miz üzerinden erişilemiyor. Tüm ayna sunucular çevrimdışı. Lütfen daha sonra tekrar deneyin."
 }

@@ -106,15 +106,16 @@ function setLoading(state, msgKey) {
 function showError(msg) {
   /* Map error code to localised string if possible */
   const codeMap = {
-    cookie_expired:  "cookie_expired",
-    unsupported:     "error_fetch",
-    login_required:  "error_fetch",
-    deleted:         "error_fetch",
-    geo_restricted:  "error_fetch",
-    network:         "error_server",
-    drm:             "error_fetch",
-    rate_limit:      "error_server",
-    unknown:         "error_fetch",
+    cookie_expired:        "cookie_expired",
+    unsupported:           "error_fetch",
+    login_required:        "error_fetch",
+    deleted:               "error_fetch",
+    geo_restricted:        "error_fetch",
+    network:               "error_server",
+    drm:                   "error_fetch",
+    rate_limit:            "error_server",
+    invidious_unavailable: "error_invidious_unavailable",
+    unknown:               "error_fetch",
   };
   /* msg might be a raw string or an object */
   let text = typeof msg === "string" ? msg : "";
@@ -340,6 +341,11 @@ function onDownload() {
     ext:    fmt.ext    || "mp4",
     title:  _vidTitle  || "VideoNeste",
   });
+  /* For Invidious formats: pass the direct CDN URL so the server proxies
+     it instead of running yt-dlp (faster, no YouTube bot-detection). */
+  if (fmt.direct_url) {
+    params.set("direct_url", fmt.direct_url);
+  }
 
   /* Create a hidden anchor and click it — no page navigation */
   const a   = document.createElement("a");

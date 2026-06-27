@@ -30,5 +30,6 @@
   "cookie_expired": "ملف الكوكيز منتهي الصلاحية أو غير صالح.",
   "close": "إغلاق",
   "footer_text": "يدعم أكثر من 1800 منصة بما فيها YouTube وTikTok وFacebook وInstagram وTwitter/X. لا يدعم المحتوى المحمي بـ DRM.",
-  "supported_platforms": "المنصات المدعومة"
+  "supported_platforms": "المنصات المدعومة",
+  "error_invidious_unavailable": "يوتيوب غير متاح حالياً. جميع خوادم الوكيل معطّلة. حاول مجدداً لاحقاً."
 }

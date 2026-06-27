@@ -30,5 +30,6 @@
   "cookie_expired": "कुकी फ़ाइल समाप्त हो गई है या अमान्य है।",
   "close": "बंद करें",
   "footer_text": "YouTube, TikTok, Facebook, Instagram, Twitter/X सहित 1800+ प्लेटफ़ॉर्म समर्थित। DRM-संरक्षित सामग्री समर्थित नहीं।",
-  "supported_platforms": "समर्थित प्लेटफ़ॉर्म"
+  "supported_platforms": "समर्थित प्लेटफ़ॉर्म",
+  "error_invidious_unavailable": "YouTube वर्तमान में हमारे प्रॉक्सी के माध्यम से उपलब्ध नहीं है। सभी मिरर सर्वर डाउन हैं। कृपया बाद में पुनः प्रयास करें।"
 }

@@ -30,5 +30,6 @@
   "cookie_expired": "Het cookies-bestand is verlopen of ongeldig.",
   "close": "Sluiten",
   "footer_text": "Ondersteunt meer dan 1800 platforms waaronder YouTube, TikTok, Facebook, Instagram, Twitter/X. Ondersteunt geen DRM-beveiligde inhoud.",
-  "supported_platforms": "Ondersteunde platforms"
+  "supported_platforms": "Ondersteunde platforms",
+  "error_invidious_unavailable": "YouTube is momenteel niet beschikbaar via onze proxy. Alle spiegelservers zijn offline. Probeer het later opnieuw."
 }

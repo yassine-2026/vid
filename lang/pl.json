@@ -30,5 +30,6 @@
   "cookie_expired": "Plik cookies wygasł lub jest nieprawidłowy.",
   "close": "Zamknij",
   "footer_text": "Obsługuje ponad 1800 platform, w tym YouTube, TikTok, Facebook, Instagram, Twitter/X. Nie obsługuje treści chronionych DRM.",
-  "supported_platforms": "Obsługiwane platformy"
+  "supported_platforms": "Obsługiwane platformy",
+  "error_invidious_unavailable": "YouTube jest obecnie niedostępny przez nasz serwer proxy. Wszystkie serwery lustrzane są offline. Spróbuj ponownie później."
 }
